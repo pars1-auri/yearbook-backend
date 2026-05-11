@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/pars1-auri/yearbook-backend/issues"
   },
-  "homepage": "https://github.com/pars1-auri/yearbook-backend#readme"
+  "homepage": "https://github.com/pars1-auri/yearbook-backend#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
