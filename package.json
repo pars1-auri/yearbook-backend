@@ -1,0 +1,22 @@
+{
+  "name": "yearbook-backend",
+  "version": "1.0.0",
+  "description": "PI REST do Yearbook Digital — IFNMG Salinas 2026",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pars1-auri/yearbook-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pars1-auri/yearbook-backend/issues"
+  },
+  "homepage": "https://github.com/pars1-auri/yearbook-backend#readme"
+}
