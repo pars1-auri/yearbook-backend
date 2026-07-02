@@ -44,25 +44,47 @@ export async function buscarAluno(req, res) {
 // Dica: os dados do aluno vêm de req.body (nome, email, senhaHash, cidade, frase, planosFuturos)
 // Dica: retorne status 201 com o aluno criado
 export async function criarAluno(req, res) {
+  try {
+    const { nome, email, senhaHash, cidade, frase, planosFuturos } = req.body;
 
-  const { nome, email, senhaHash, cidade, frase, planosFuturos } = req.body;
+    const alunoCriado = await prisma.aluno.create({
+      data: {
+        nome,
+        email,
+        senhaHash,
+        cidade,
+        frase,
+        planosFuturos,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        cidade: true,
+        frase: true,
+        planosFuturos: true,
+        fotoUrl: true,
+        role: true,
+        criadoEm: true,
+      },
+    });
 
-  const alunoCriado = await prisma.aluno.create({
-    data: {
-      nome,
-      email,
-      senhaHash,
-      cidade,
-      frase,
-      planosFuturos,
-    },
-    select: selectSemSenha,
+    return res.status(201).json(alunoCriado);
+
+  }catch (error) {
+  console.log(error);
+
+  if (error.code === "P2002") {
+    return res.status(409).json({
+      erro: "Email já cadastrado",
+    });
+  }
+
+  return res.status(500).json({
+    erro: "Erro interno",
   });
-
-  res.status(201).json(alunoCriado);
 }
-  
-  
+}
 
 // 🎯 PUT /alunos/:id — atualiza um aluno existente
 // Dica: use prisma.aluno.update({ where: { id: Number(id) }, data: { ... }, select: selectSemSenha })
