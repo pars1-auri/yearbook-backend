@@ -1,92 +1,82 @@
-import prisma from '../prisma/client.js'; // importa o singleton do Prisma
+import prisma from '../prisma/client.js';
 
-// GET /mensagens — lista todas as mensagens (mais recentes primeiro, com dados do autor)
-export async function listarMensagens(req, res) {
+// GET /mensagens
+export async function listarMensagens(req, res, next) {
   try {
     const mensagens = await prisma.mensagem.findMany({
-      orderBy: { criadoEm: 'desc' },  // mais recente primeiro
+      orderBy: { criadoEm: 'desc' },
       include: {
-        autor: {                        // traz dados do autor junto
+        autor: {
           select: {
-            nome: true,                 // nome do autor
-            fotoUrl: true,              // foto do autor
+            nome: true,
+            fotoUrl: true,
           },
         },
       },
     });
-    return res.json(mensagens); // retorna a lista com autor embutido
+    return res.json(mensagens);
   } catch (error) {
-    console.error("Erro ao listar mensagens:", error);
-    return res.status(500).json({ erro: 'Erro interno ao buscar mensagens.' });
+    next(error);
   }
 }
 
-// 🎯 POST /mensagens — cria uma nova mensagem
-// Siga o mesmo padrão do criarAluno
-// Valide que texto não está vazio (400 se faltar)
-export async function criarMensagem(req, res) {
+// POST /mensagens
+export async function criarMensagem(req, res, next) {
   try {
-    // 1. Extraia texto, imagemUrl e autorId de req.body
-    const { texto, imagemUrl, autorId } = req.body;
+    // Garante que req.body existe para evitar TypeError
+    const body = req.body || {};
+    const { texto, autorId } = body;
 
-    // 2. Valide: se texto não existir, retorne 400
-    if (!texto || texto.trim() === '') {
+    // 1. Valida se o texto está presente e não é apenas espaço em branco
+    if (!texto || typeof texto !== 'string' || texto.trim() === '') {
       return res.status(400).json({ erro: 'O campo "texto" é obrigatório.' });
     }
 
-    if (!autorId) {
-      return res.status(400).json({ erro: 'O campo autorId é obrigatório.' });
+    // 2. Valida se o autorId foi enviado e se é um número válido
+    const idNumerico = Number(autorId);
+    if (!autorId || Number.isNaN(idNumerico)) {
+      return res.status(400).json({ erro: 'O campo "autorId" deve ser um número válido.' });
     }
 
-    // 3. Crie com prisma.mensagem.create()
+    // 3. Busca o autor somente após garantir que idNumerico não é NaN
+    const autorExistente = await prisma.aluno.findUnique({
+      where: { id: idNumerico }
+    });
+
+    if (!autorExistente) {
+      return res.status(400).json({ erro: 'O autorId fornecido não existe.' });
+    }
+
+    // 4. Criação da mensagem no banco
     const novaMensagem = await prisma.mensagem.create({
       data: {
-        texto,
-        imagemUrl,
-        autorId: Number(autorId) // ⚠️ Importante para compatibilidade com o Neon/Postgres
+        texto: texto.trim(),
+        autorId: idNumerico
       }
     });
 
-    // 4. Retorne 201 com a mensagem criada
     return res.status(201).json(novaMensagem);
-
   } catch (error) {
-    console.error("Erro ao criar mensagem:", error);
-    
-    if (error.code === 'P2003') {
-      return res.status(400).json({ erro: 'O autorId fornecido não existe no banco de dados.' });
-    }
-
-    return res.status(500).json({ erro: 'Erro interno do servidor ao salvar a mensagem.' });
+    next(error);
   }
 }
 
-// 🎯 DELETE /mensagens/:id — deleta uma mensagem
-// Siga o mesmo padrão do deletarAluno
-export async function deletarMensagem(req, res) {
+// DELETE /mensagens/:id
+export async function deletarMensagem(req, res, next) {
   try {
-    // 1. Extrai o id dos parâmetros da URL (req.params)
     const { id } = req.params;
 
-    // 2. Tenta deletar no banco usando o ID convertido para número
     await prisma.mensagem.delete({
       where: {
-        id: Number(id) // ⚠️ Importante: converte a string da URL para número inteiro
-      }
+        id: Number(id),
+      },
     });
 
-    // 3. Retorna 204 No Content se a deleção deu certo (sucesso sem corpo na resposta)
     return res.status(204).send();
-
   } catch (error) {
-    console.error("Erro ao deletar mensagem:", error);
-
-    // 4. Se o Prisma não encontrar o registro com esse ID, ele lança o erro 'P2025'
     if (error.code === 'P2025') {
-      return res.status(404).json({ erro: 'Mensagem não encontrada.' });
+      return res.status(404).json({ erro: 'Mensagem não encontrada' });
     }
-
-    // Para qualquer outro tipo de erro inesperado no banco
-    return res.status(500).json({ erro: 'Erro interno ao deletar a mensagem.' });
+    next(error);
   }
 }
